@@ -1,0 +1,18 @@
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# --- Secretos y configuración local ---
+.env
+
+# --- Datos generados (bases locales, outbox, volúmenes) ---
+data/
+*.db
+*.sqlite
+
+# --- Sistema operativo / editores ---
+.DS_Store
+.vscode/
+.idea/

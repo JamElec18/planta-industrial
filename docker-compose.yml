@@ -1,0 +1,57 @@
+# =============================================================================
+# Orquestación local de la Línea 1: base de datos + simulador OPC UA + collector
+# Arranque:  docker compose up -d --build
+# =============================================================================
+services:
+
+  # ── PASO 1 · Base de datos ────────────────────────────────────────────────
+  # PostgreSQL con el esquema y los datos semilla de db/init (solo en el primer arranque).
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-planta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-planta}
+      POSTGRES_DB: ${POSTGRES_DB:-planta}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-planta} -d ${POSTGRES_DB:-planta}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── PASO 2 · Simulador de planta ──────────────────────────────────────────
+  # Servidor OPC UA que hace de "PLC": genera estados, conteos, temperatura y presión.
+  simulator:
+    build: .
+    command: python -m simulator.server
+    environment:
+      SIM_ENDPOINT: opc.tcp://0.0.0.0:4840/planta
+    ports:
+      - "4840:4840"
+    restart: unless-stopped
+
+  # ── PASO 3 · Collector ────────────────────────────────────────────────────
+  # Cliente OPC UA -> outbox SQLite -> PostgreSQL. Se recupera solo de caídas.
+  collector:
+    build: .
+    command: python -m collector.main
+    environment:
+      OPC_ENDPOINT: opc.tcp://simulator:4840/planta
+      PG_DSN: postgresql://${POSTGRES_USER:-planta}:${POSTGRES_PASSWORD:-planta}@db:5432/${POSTGRES_DB:-planta}
+      OUTBOX_PATH: /data/outbox.db
+    volumes:
+      - outbox:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      simulator:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  outbox:
