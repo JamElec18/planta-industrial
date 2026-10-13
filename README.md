@@ -76,6 +76,7 @@ db/init/     esquema SQL y datos semilla
 sql/         consultas de análisis de la Fase 1
 tests/       pruebas unitarias
 api-ejemplos/  ejercicios de APIs REST con FastAPI (ver su README)
+spark-etl/     ETL con PySpark: limpieza y OEE por turno (ver su README)
 ```
 
 ## Notas para la Fase 2 (OEE)

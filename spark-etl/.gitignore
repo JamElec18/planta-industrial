@@ -1,0 +1,4 @@
+# Datos generados por generar_datos.py y etl.py (se recrean en cada ejecución)
+datos/
+spark-warehouse/
+metastore_db/
